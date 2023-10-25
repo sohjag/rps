@@ -1,4 +1,4 @@
-import { BN } from "bn.js";
+import BN from "bn.js";
 
 export default function generateSalt() {
   // Generate a random 256-bit (32-byte) salt
