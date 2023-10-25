@@ -11,7 +11,8 @@ export default function generateSalt() {
     salt[i] = randomBytes[31 - i];
   }
 
-  const saltUint256 = new BN(salt).toString("hex");
+  // Convert salt to a valid hexadecimal string with '0x' prefix
+  const saltUint256 = "0x" + new BN(salt).toString("hex");
 
   return saltUint256;
 }

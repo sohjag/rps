@@ -1,12 +1,17 @@
 import { useMoralis, useWeb3Contract } from "react-moralis";
 
 export default function Navbar() {
-  const { enableWeb3, isWeb3Enabled } = useMoralis();
+  const { enableWeb3, isWeb3Enabled, account } = useMoralis();
 
   return (
     <div>
-      {isWeb3Enabled ? (
-        <div>Connected!</div>
+      {account ? (
+        <div>
+          Connected to{" "}
+          <span>
+            {account?.slice(0, 6)}...{account?.slice(account.length - 4)}
+          </span>
+        </div>
       ) : (
         <div>
           <button
