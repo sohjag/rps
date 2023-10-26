@@ -8,6 +8,7 @@ import { ethers } from "ethers";
 import rpcAbi from "../contracts/abi/rpc-abi.json";
 import { RPC_BYTECODE } from "@/contracts/bytecode";
 import calculateHash from "@/utils/calcHash";
+import axios from "axios";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,7 +21,7 @@ if (typeof window !== "undefined") {
 }
 
 export default function Home() {
-  const { enableWeb3, isWeb3Enabled } = useMoralis();
+  const { enableWeb3, isWeb3Enabled, account } = useMoralis();
   console.log("...isweb3 enabled", isWeb3Enabled);
   const ethers = Moralis.web3Library;
   let salt;
@@ -37,8 +38,8 @@ export default function Home() {
     _c1hash = calculateHash(move, salt);
   };
 
-  // console.log("provider is...", provider);
-  // console.log("signer is...", signer);
+  console.log("provider is...", provider);
+  console.log("signer is...", signer);
 
   const handleCreateGame = async () => {
     //@ts-ignore
@@ -54,15 +55,67 @@ export default function Home() {
     console.log(`Contract deployed at address: ${contract.address}`);
   };
 
+  async function signMessage(nonce: any) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const signature = await signer.signMessage(`${nonce}`);
+        resolve(signature);
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  const handleSignIn = async () => {
+    const nonce = await axios({
+      method: "GET",
+      url: "/api/auth-test/getNonce",
+      params: {
+        userAddress: account,
+      },
+    });
+    console.log(nonce);
+    // const signature = signer.signMessage(`${nonce.data.nonce}`);
+    const signature = await signMessage(nonce.data.nonce);
+    const auth = await axios({
+      method: "POST",
+      url: "/api/auth-test/verify",
+      data: {
+        address: account,
+        signature: signature,
+        nonce: nonce.data.nonce,
+      },
+    });
+    console.log(auth);
+  };
+
   return (
     <div>
       <Navbar />
       <div>Hello world</div>
       <div>
-        <button onClick={handleSaltGeneration}>Generate Salt</button>
+        <button
+          className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
+          onClick={handleSaltGeneration}
+        >
+          Generate Salt
+        </button>
       </div>
       <div>
-        <button onClick={handleCreateGame}>Create game</button>
+        <button
+          className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
+          onClick={handleSignIn}
+        >
+          Sign In
+        </button>
+      </div>
+      <div>
+        <button
+          className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
+          onClick={handleCreateGame}
+        >
+          Create game
+        </button>
       </div>
     </div>
   );

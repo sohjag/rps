@@ -15,6 +15,7 @@ export default function Navbar() {
       ) : (
         <div>
           <button
+            className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
             onClick={() => {
               enableWeb3();
             }}
