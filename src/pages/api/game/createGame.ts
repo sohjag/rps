@@ -1,5 +1,4 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import mongoose from "mongoose";
 import { ensureDbConnected } from "@/utils/dbConnect";
 import { Game } from "@/utils/db";
 
@@ -9,17 +8,26 @@ export default async function handler(
 ) {
   if (req.method === "POST") {
     try {
-      let p1_address = "0xD5c4f2A66E031f2C654EDfA06EBD7DF10Eda61d5";
-      let p2_address = "0x4C9201d8bF9A70b7550585DAc1738D4F7Dfd5108";
-      let game_address = "0x2f136367cA5f665E8a477a5379A3069Ea821F235";
+      let { p1_address, p2_address, game_address, p1_move_salt } = req.body;
 
       p1_address = p1_address.toLowerCase();
       p2_address = p2_address.toLowerCase();
       game_address = game_address.toLowerCase();
+      p1_move_salt = p1_move_salt.toLowerCase();
+
+      console.log("creating game for p1_address...", p1_address);
+      console.log("creating game for p2_address...", p2_address);
+      console.log("creating game for game_address...", game_address);
+      console.log("creating game for p1_move_salt...", p1_move_salt);
 
       await ensureDbConnected();
 
-      const gameObj = new Game({ p1_address, p2_address, game_address });
+      const gameObj = new Game({
+        p1_address: p1_address,
+        p2_address: p2_address,
+        game_address: game_address,
+        p1_move_salt: p1_move_salt,
+      });
       await gameObj.save();
       res.status(200).json({
         message: "Game object created in db successfully",
