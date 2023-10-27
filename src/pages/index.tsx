@@ -6,8 +6,8 @@ import generateSalt from "@/utils/generateSalt";
 import Moralis from "moralis-v1";
 import { ethers } from "ethers";
 import rpcAbi from "../contracts/abi/rpc-abi.json";
+import hasherAbi from "../contracts/abi/hasher-abi.json";
 import { RPC_BYTECODE } from "@/contracts/bytecode";
-import calculateHash from "@/utils/calcHash";
 import axios from "axios";
 import { useSetRecoilState, useRecoilValue } from "recoil";
 import { userGames } from "@/store/atoms/userGames";
@@ -30,11 +30,138 @@ export default function Home() {
   let salt: any;
   let _c1hash: any;
   const move = 1;
-  const j2Address = "0x4C9201d8bF9A70b7550585DAc1738D4F7Dfd5108";
+  // const j2Address = "0x4C9201d8bF9A70b7550585DAc1738D4F7Dfd5108";
   const user = useRecoilValue(userGames);
   const setUserGames = useSetRecoilState(userGames);
   const [selectedTab, setSelectedTab] = useState("p1");
-  const [selectedGame, setSelectedGame] = useState(null);
+  const [j2Address, setj2Address] = useState("");
+
+  const [selectedGame, setSelectedGame] = useState<any>(null);
+  const [inputValue, setInputValue] = useState("0");
+  const [etherValue, setEtherValue] = useState<any>(null);
+  const [selectedMove, setSelectedMove] = useState("Null");
+  const moveHexValues: { [key: string]: any } = {
+    Null: 0,
+    Rock: 1,
+    Paper: 2,
+    Scissors: 3,
+    Spock: 4,
+    Lizard: 5,
+  };
+  const hasherContract = "0x073a7767009B2a6da4cd254B552f9F50C3E26043";
+
+  const handleDecodeMove = async () => {
+    console.log("decoding the move...");
+    let decodedMove;
+    for (const key in moveHexValues) {
+      if (moveHexValues.hasOwnProperty(key)) {
+        decodedMove = moveHexValues[key];
+
+        const decodedAddress = ethers.utils.verifyMessage(
+          `${decodedMove}`,
+          selectedGame.p1_move_hash
+        );
+
+        console.log("connected account is...", account);
+        console.log("decoded address is...", decodedAddress);
+        if (account?.toLowerCase() === decodedAddress.toLowerCase()) {
+          break;
+        }
+        console.log(`Key: ${key}, Value: ${decodedMove}`);
+      }
+    }
+    console.log("decoded move is..", decodedMove);
+    return decodedMove;
+  };
+
+  const handleSolve = async () => {
+    if (!selectedGame) {
+      alert("please select a game first");
+      return;
+    }
+    const contract = new ethers.Contract(
+      selectedGame.game_address,
+      rpcAbi,
+      provider
+    );
+    const contractWithSigner = contract.connect(signer);
+
+    const move = handleDecodeMove();
+
+    console.log("handling solve with move...", move);
+    console.log("handling solve with salt...", selectedGame.p1_move_salt);
+
+    //solve
+    const result = await contractWithSigner.solve(
+      move,
+      selectedGame.p1_move_salt,
+      {
+        gasLimit: 600000,
+      }
+    );
+
+    console.log("solve result is...", result);
+    alert("Game solved!");
+  };
+
+  const handleGetRefund = async () => {
+    if (!selectedGame) {
+      alert("please select a game first");
+      return;
+    }
+    console.log("getting refund..");
+    const contract = new ethers.Contract(
+      selectedGame.game_address,
+      rpcAbi,
+      provider
+    );
+    const contractWithSigner = contract.connect(signer);
+    const result = await contractWithSigner.j2Timeout();
+    console.log("refund processed...", result);
+    alert("refund processed");
+  };
+
+  const handlePlayMove = async () => {
+    if (!selectedGame) {
+      alert("please select a game first");
+      return;
+    }
+    const contract = new ethers.Contract(
+      selectedGame.game_address,
+      rpcAbi,
+      provider
+    );
+    const contractWithSigner = contract.connect(signer);
+
+    console.log("playing move...", moveHexValues[selectedMove]);
+    console.log("stake is...", selectedGame.stake);
+
+    const result = await contractWithSigner.play(moveHexValues[selectedMove], {
+      value: selectedGame.stake,
+    });
+    console.log("play move result...", result);
+    axios({
+      method: "PATCH",
+      url: "/api/game/updateGame",
+      data: {
+        game_address: selectedGame.game_address,
+      },
+    });
+  };
+
+  const handleMoveClick = (move: any) => {
+    setSelectedMove(move);
+  };
+
+  // const handleInputChange = (e: any) => {
+  //   // Ensure the input is a number or a valid decimal number
+  //   if (/^\d*\.?\d*$/.test(e.target.value)) {
+  //     setInputValue(e.target.value);
+  //     // Convert the input to Ether (wei)
+  //     const etherAmount = ethers.utils.parseUnits(e.target.value, "ether");
+  //     setEtherValue(etherAmount.toString());
+  //   }
+  // };
 
   const handleTabChange = (tab: any) => {
     setSelectedTab(tab);
@@ -48,6 +175,7 @@ export default function Home() {
       (item: any) => item.game_address === selectedAddress
     );
     setSelectedGame(game);
+    // console.log("selected game is....", selectedGame);
   };
   const currentGames =
     selectedTab === "p1" ? user.games_as_p1 : user.games_as_p2;
@@ -83,16 +211,27 @@ export default function Home() {
     console.log("userGames set to..", user);
   }, [account]);
 
-  const handleSaltGeneration = () => {
+  const handleSaltGeneration = async () => {
     salt = generateSalt();
     console.log("generated salt is...", salt);
     console.log("typeof salt is...", typeof salt);
     // const saltHex = ethers.utils.hexlify(salt); // Convert salt to a properly formatted hexadecimal string
     // console.log("hexlified salt is...", saltHex);
 
-    const moveHex = ethers.utils.hexlify(move);
-    console.log("moveHex is...", moveHex);
-    _c1hash = calculateHash(moveHex, salt);
+    // const moveHex = ethers.utils.hexlify(move);
+    // console.log("moveHex is...", moveHex);
+    // _c1hash = calculateHash(moveHexValues[selectedMove], salt);
+
+    const contract = new ethers.Contract(hasherContract, hasherAbi, provider);
+    const contractWithSigner = contract.connect(signer);
+
+    _c1hash = await contractWithSigner.hash(moveHexValues[selectedMove], salt);
+    console.log("hash from hasher contract is...", _c1hash);
+
+    // console.log(
+    //   "ethers parsed inputValue is",
+    //   ethers.utils.parseEther(inputValue)
+    // );
   };
 
   console.log("provider is...", provider);
@@ -103,6 +242,10 @@ export default function Home() {
       alert("please generate salt first");
       return;
     }
+    if (!j2Address) {
+      alert("Please set player 2 address");
+      return;
+    }
     //@ts-ignore
     const contractFactory = new ethers.ContractFactory(
       rpcAbi,
@@ -111,7 +254,20 @@ export default function Home() {
     );
     console.log("deploying contract, please wait...");
 
-    const contract = await contractFactory.deploy(_c1hash, j2Address);
+    const p1_move_hash = await signer.signMessage(
+      `${moveHexValues[selectedMove]}`
+    );
+
+    // const p1_move_hash = await signMessage(moveHexValues[selectedMove]);
+
+    // const value = 1234567891234567;
+    // const valueHex = ethers.utils.hexlify(value);
+
+    const value = ethers.utils.parseEther(etherValue);
+
+    const contract = await contractFactory.deploy(_c1hash, j2Address, {
+      value: value._hex,
+    });
     await contract.deployed();
     console.log(
       "contract deployed,adding to db, please wait...",
@@ -119,6 +275,7 @@ export default function Home() {
     );
 
     console.log("creating game record with move salt...", salt);
+    console.log("creating game record with move hash...", _c1hash);
 
     //db actions
     const response = await axios({
@@ -129,6 +286,8 @@ export default function Home() {
         p2_address: j2Address,
         game_address: contract.address,
         p1_move_salt: salt,
+        p1_move_hash: p1_move_hash,
+        stake: value._hex.toString(),
       },
     });
 
@@ -220,13 +379,50 @@ export default function Home() {
           Sign In
         </button>
       </div>
+      <div className="p-2 m-2">
+        {["Null", "Rock", "Paper", "Scissors", "Spock", "Lizard"].map(
+          (move) => (
+            <button
+              key={move}
+              className={`px-4 py-2 rounded-md ${
+                selectedMove === move ? "bg-blue-500 text-white font-bold" : ""
+              }`}
+              onClick={() => handleMoveClick(move)}
+            >
+              {move}
+            </button>
+          )
+        )}
+      </div>
       <div>
-        <button
-          className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
-          onClick={handleCreateGame}
-        >
-          Create game
-        </button>
+        <div>
+          <input
+            type="text"
+            placeholder="Enter player 2 address"
+            onChange={(e) => {
+              setj2Address(e.target.value);
+            }}
+            className="text-black"
+          />
+        </div>
+        <div>
+          <input
+            type="text"
+            placeholder="Enter eth value"
+            onChange={(e) => {
+              setEtherValue(e.target.value);
+            }}
+            className="text-black"
+          />
+        </div>
+        <div>
+          <button
+            className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
+            onClick={handleCreateGame}
+          >
+            Create game
+          </button>
+        </div>
       </div>
       <div>
         <div>
@@ -266,6 +462,49 @@ export default function Home() {
           </div>
         )}
       </div>
+
+      {selectedTab === "p1" ? (
+        <div>
+          <button
+            className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
+            onClick={handleSolve}
+          >
+            Solve
+          </button>
+          <button
+            className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
+            onClick={handleGetRefund}
+          >
+            Refund
+          </button>
+        </div>
+      ) : (
+        <div>
+          <div className="p-2 m-2">
+            {["Null", "Rock", "Paper", "Scissors", "Spock", "Lizard"].map(
+              (move) => (
+                <button
+                  key={move}
+                  className={`px-4 py-2 rounded-md ${
+                    selectedMove === move
+                      ? "bg-blue-500 text-white font-bold"
+                      : ""
+                  }`}
+                  onClick={() => handleMoveClick(move)}
+                >
+                  {move}
+                </button>
+              )
+            )}
+          </div>
+          <button
+            className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
+            onClick={handlePlayMove}
+          >
+            Play your move
+          </button>
+        </div>
+      )}
     </div>
   );
 }

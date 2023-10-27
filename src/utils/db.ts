@@ -6,6 +6,7 @@ const gameSchema = new mongoose.Schema({
   game_address: String,
   has_p2_played: { type: Boolean, default: false },
   p1_move_salt: String,
+  p1_move_hash: String,
   result: String,
   stake: String,
   createdAt: { type: Date, default: new Date() },
