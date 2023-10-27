@@ -2,6 +2,8 @@ import { UserNonce } from "@/utils/db";
 import { ensureDbConnected } from "@/utils/dbConnect";
 import { NextApiRequest, NextApiResponse } from "next";
 import { ethers } from "ethers";
+import * as jose from "jose";
+import cookie from "cookie";
 
 export default async function handler(
   req: NextApiRequest,
@@ -31,11 +33,26 @@ export default async function handler(
         console.log("inside IF block...");
         console.log("address is ....", address);
         console.log("decoded address is...", decodedAddress.toLowerCase());
+        const jwtToken = await new jose.SignJWT({ userAddress: address })
+          .setProtectedHeader({ alg: "HS256" })
+          .setIssuedAt()
+          .setExpirationTime("1d")
+          .sign(new TextEncoder().encode(process.env.SECRET_KEY));
+
+        const cookies = cookie.serialize("rps-token", jwtToken, {
+          httpOnly: true,
+          maxAge: 3600, // 1 hour in seconds
+          sameSite: "strict",
+          path: "/",
+        });
+        res.setHeader("Set-Cookie", cookies);
+
         authenticated = true;
+        res.status(200).json({ authenticated });
       }
-      res.status(200).json({ authenticated });
+      res.status(400).json({ authenticated });
     }
-    res.status(400).json({ message: "Nonce expired or not found" });
+    res.status(401).json({ message: "Nonce expired or not found" });
 
     try {
     } catch (e) {
