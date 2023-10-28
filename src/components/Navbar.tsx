@@ -52,6 +52,7 @@ export default function Navbar() {
     });
 
     setIsAuthenticated(auth.data.authenticated);
+    localStorage.setItem("rps-token", auth.data.jwtToken);
 
     if (auth.status === 200) {
       try {

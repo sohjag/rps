@@ -38,23 +38,23 @@ export default async function handler(
         const jwtToken = await new jose.SignJWT({ userAddress: address })
           .setProtectedHeader({ alg: "HS256" })
           .setIssuedAt()
-          .setExpirationTime("1d")
+          .setExpirationTime("1h")
           .sign(new TextEncoder().encode(process.env.SECRET_KEY));
 
         console.log("jwtToken is...", jwtToken);
 
-        const cookies = cookie.serialize("rps-token", jwtToken, {
-          httpOnly: true,
-          maxAge: 3600, // 1 hour in seconds
-          sameSite: "strict",
-          path: "/",
-        });
+        // const cookies = cookie.serialize("rps-token", jwtToken, {
+        //   httpOnly: true,
+        //   maxAge: 3600, // 1 hour in seconds
+        //   sameSite: "strict",
+        //   path: "/",
+        // });
 
-        console.log("cookies created...", cookies);
+        // console.log("cookies created...", cookies);
 
-        res.setHeader("Set-Cookie", cookies);
+        // res.setHeader("Set-Cookie", cookies);
 
-        console.log("response header set with cookies");
+        // console.log("response header set with cookies");
 
         // new db schema not being sconstructed in vercel -- check back later
         // //check if user exists
@@ -70,7 +70,7 @@ export default async function handler(
         // }
 
         authenticated = true;
-        res.status(200).json({ authenticated });
+        res.status(200).json({ authenticated, jwtToken });
       }
       res.status(400).json({ authenticated });
     }
