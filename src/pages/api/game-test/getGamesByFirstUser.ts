@@ -19,7 +19,8 @@ export default async function handler(
 
       // Remove 'p1_move_salt' field from each game
       const games_as_p2 = games_as_p2_temp.map((game) => {
-        const { p1_move_salt, ...gameWithoutP1MoveSalt } = game.toObject();
+        const { p1_move_salt, p1_move_hash, ...gameWithoutP1MoveSalt } =
+          game.toObject();
         return gameWithoutP1MoveSalt;
       });
 
