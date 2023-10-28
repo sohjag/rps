@@ -219,13 +219,12 @@ export default function Home() {
       }
     } catch (e) {
       console.log("Error while fetching games", e);
-      alert("Error while fetching games");
+      // alert("Error while fetching games");
     }
   };
 
   useEffect(() => {
     getGames();
-    // console.log("userGames set to..", user);
   }, [account]);
 
   const handleSaltGeneration = async () => {
