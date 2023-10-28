@@ -41,12 +41,17 @@ export default async function handler(
           .setExpirationTime("1d")
           .sign(new TextEncoder().encode(process.env.SECRET_KEY));
 
+        console.log("jwtToken is...", jwtToken);
+
         const cookies = cookie.serialize("rps-token", jwtToken, {
           httpOnly: true,
           maxAge: 3600, // 1 hour in seconds
           sameSite: "strict",
           path: "/",
         });
+
+        console.log("cookies created...", cookies);
+
         res.setHeader("Set-Cookie", cookies);
 
         //check if user exists

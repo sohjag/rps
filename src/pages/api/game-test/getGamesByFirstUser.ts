@@ -23,8 +23,8 @@ export default async function handler(
         return gameWithoutP1MoveSalt;
       });
 
-      console.log("games_as_p1 is...", games_as_p1);
-      console.log("games_as_p2 is...", games_as_p2);
+      // console.log("games_as_p1 is...", games_as_p1);
+      // console.log("games_as_p2 is...", games_as_p2);
 
       res.status(200).json({
         message: "hi",
