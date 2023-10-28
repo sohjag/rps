@@ -29,7 +29,6 @@ export default function Home() {
   const ethers = Moralis.web3Library;
   let salt: any;
   let _c1hash: any;
-  const move = 1;
   // const j2Address = "0x4C9201d8bF9A70b7550585DAc1738D4F7Dfd5108";
   const user = useRecoilValue(userGames);
   const setUserGames = useSetRecoilState(userGames);
@@ -41,7 +40,6 @@ export default function Home() {
   const [etherValue, setEtherValue] = useState<any>(null);
   const [selectedMove, setSelectedMove] = useState("Null");
   const moveHexValues: { [key: string]: any } = {
-    Null: 0,
     Rock: 1,
     Paper: 2,
     Scissors: 3,
