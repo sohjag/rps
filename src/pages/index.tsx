@@ -53,18 +53,36 @@ export default function Home() {
   const handleDecodeMove = async () => {
     console.log("decoding the move...");
     let decodedMove;
+    alert(
+      `You will now be prompted for up to 5 signatures to decode your move for the game ${selectedGame.game_address}`
+    );
     for (const key in moveHexValues) {
       if (moveHexValues.hasOwnProperty(key)) {
         decodedMove = moveHexValues[key];
 
-        const decodedAddress = ethers.utils.verifyMessage(
-          `${decodedMove}`,
-          selectedGame.p1_move_hash
+        // const decodedAddress = ethers.utils.verifyMessage(
+        //   `${decodedMove}`,
+        //   selectedGame.p1_move_hash
+        // );
+        //p1_move_hash
+        const p1_move_hash_guess = await signer.signMessage(`${decodedMove}`);
+        const p1_move_hash_guess_partial = p1_move_hash_guess.slice(
+          Math.floor(p1_move_hash_guess.length / 2)
         );
 
         console.log("connected account is...", account);
-        console.log("decoded address is...", decodedAddress);
-        if (account?.toLowerCase() === decodedAddress.toLowerCase()) {
+        console.log(
+          "selectedGame.p1_move_hash account is...",
+          selectedGame.p1_move_hash
+        );
+
+        console.log("decoded address is...", p1_move_hash_guess_partial);
+        // if (account?.toLowerCase() === decodedAddress.toLowerCase()) {
+        //   break;
+        // }
+        if (
+          selectedGame.p1_move_hash === p1_move_hash_guess_partial.toLowerCase()
+        ) {
           break;
         }
         console.log(`Key: ${key}, Value: ${decodedMove}`);
@@ -138,6 +156,7 @@ export default function Home() {
 
     const result = await contractWithSigner.play(moveHexValues[selectedMove], {
       value: selectedGame.stake,
+      gasLimit: 200000,
     });
     console.log("play move result...", result);
     axios({
@@ -258,6 +277,11 @@ export default function Home() {
       `${moveHexValues[selectedMove]}`
     );
 
+    const p1_move_hash_partial = p1_move_hash.slice(
+      Math.floor(p1_move_hash.length / 2)
+    );
+    console.log("p1_move_hash_partial is...", p1_move_hash_partial);
+
     // const p1_move_hash = await signMessage(moveHexValues[selectedMove]);
 
     // const value = 1234567891234567;
@@ -286,7 +310,7 @@ export default function Home() {
         p2_address: j2Address,
         game_address: contract.address,
         p1_move_salt: salt,
-        p1_move_hash: p1_move_hash,
+        p1_move_hash: p1_move_hash_partial,
         stake: value._hex.toString(),
       },
     });
