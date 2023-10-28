@@ -54,15 +54,20 @@ export default async function handler(
 
         res.setHeader("Set-Cookie", cookies);
 
-        //check if user exists
-        const existingUser = await User.findOne({
-          user_address: address,
-        });
-        //if not,create new
-        if (!existingUser) {
-          const userObj = new User({ user_address: address });
-          await userObj.save();
-        }
+        console.log("response header set with cookies");
+
+        // new db schema not being sconstructed in vercel -- check back later
+        // //check if user exists
+        // const existingUser = await User.findOne({
+        //   user_address: address,
+        // });
+        // console.log("checked if user exists");
+
+        // //if not,create new
+        // if (!existingUser) {
+        //   const userObj = new User({ user_address: address });
+        //   await userObj.save();
+        // }
 
         authenticated = true;
         res.status(200).json({ authenticated });
