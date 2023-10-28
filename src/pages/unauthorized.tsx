@@ -1,3 +1,12 @@
+import Navbar from "@/components/Navbar";
+
 export default function Unauthorized() {
-  return <div>You are unauthorized</div>;
+  return (
+    <div>
+      <div>
+        <Navbar />
+      </div>
+      <div>You are unauthorized</div>
+    </div>
+  );
 }

@@ -4,6 +4,7 @@ import { useSetRecoilState, useRecoilValue } from "recoil";
 import { userGames } from "@/store/atoms/userGames";
 import { ethers } from "ethers";
 import { useEffect, useState } from "react";
+import { userAuthenticated } from "@/store/atoms/userAuthenticated";
 
 let provider: any;
 let signer: any;
@@ -17,7 +18,9 @@ export default function Navbar() {
   const { enableWeb3, isWeb3Enabled, account } = useMoralis();
   const setUserGames = useSetRecoilState(userGames);
   const user = useRecoilValue(userGames);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  //   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const isUserAuthenticated = useRecoilValue(userAuthenticated);
+  const setIsUserAuthenticated = useSetRecoilState(userAuthenticated);
 
   async function signMessage(nonce: any) {
     return new Promise(async (resolve, reject) => {
@@ -29,6 +32,19 @@ export default function Navbar() {
       }
     });
   }
+
+  const handleSignOut = async () => {
+    setUserGames({
+      isLoading: false,
+      games_as_p1: null,
+      games_as_p2: null,
+    });
+    localStorage.setItem("rps-token", "");
+    setIsUserAuthenticated({
+      isLoading: true,
+      userAuthenticated: false,
+    });
+  };
 
   const handleSignIn = async () => {
     const nonce = await axios({
@@ -51,7 +67,10 @@ export default function Navbar() {
       },
     });
 
-    setIsAuthenticated(auth.data.authenticated);
+    setIsUserAuthenticated({
+      isLoading: false,
+      userAuthenticated: auth.data.authenticated,
+    });
     localStorage.setItem("rps-token", auth.data.jwtToken);
 
     if (auth.status === 200) {
@@ -94,7 +113,14 @@ export default function Navbar() {
             <span>
               {account?.slice(0, 6)}...{account?.slice(account.length - 4)}
             </span>
-            {!isAuthenticated && (
+            {isUserAuthenticated.userAuthenticated ? (
+              <button
+                className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
+                onClick={handleSignOut}
+              >
+                Sign Out
+              </button>
+            ) : (
               <button
                 className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
                 onClick={handleSignIn}
