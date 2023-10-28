@@ -38,7 +38,7 @@ export default function Home() {
   const [selectedGame, setSelectedGame] = useState<any>(null);
   const [inputValue, setInputValue] = useState("0");
   const [etherValue, setEtherValue] = useState<any>(null);
-  const [selectedMove, setSelectedMove] = useState("Null");
+  const [selectedMove, setSelectedMove] = useState("Rock");
   const moveHexValues: { [key: string]: any } = {
     Rock: 1,
     Paper: 2,
@@ -225,7 +225,7 @@ export default function Home() {
 
   useEffect(() => {
     getGames();
-    console.log("userGames set to..", user);
+    // console.log("userGames set to..", user);
   }, [account]);
 
   const handleSaltGeneration = async () => {
@@ -321,190 +321,151 @@ export default function Home() {
     console.log(`Contract deployed at address: ${contract.address}`);
   };
 
-  async function signMessage(nonce: any) {
-    return new Promise(async (resolve, reject) => {
-      try {
-        const signature = await signer.signMessage(`${nonce}`);
-        resolve(signature);
-      } catch (error) {
-        reject(error);
-      }
-    });
-  }
-
-  const handleSignIn = async () => {
-    const nonce = await axios({
-      method: "GET",
-      url: "/api/auth-test/getNonce",
-      params: {
-        userAddress: account,
-      },
-    });
-    console.log(nonce);
-    // const signature = signer.signMessage(`${nonce.data.nonce}`);
-    const signature = await signMessage(nonce.data.nonce);
-    const auth = await axios({
-      method: "POST",
-      url: "/api/auth-test/verify",
-      data: {
-        address: account,
-        signature: signature,
-        nonce: nonce.data.nonce,
-      },
-    });
-
-    if (auth.status === 200) {
-      try {
-        console.log("getting gamesdata for account...", account);
-
-        const gamesData = await axios({
-          method: "GET",
-          url: "/api/game-test/getGamesByFirstUser",
-          params: {
-            p1_address: account,
-          },
-        });
-        if (gamesData) {
-          console.log("gamesData received is...", gamesData);
-          setUserGames({
-            isLoading: false,
-            games_as_p1: gamesData.data.games_as_p1,
-            games_as_p2: gamesData.data.games_as_p2,
-          });
-        }
-      } catch (e) {
-        console.log("Error while fetching games", e);
-        alert("Error while fetching games");
-      }
-    }
-    console.log(auth);
-    console.log("usergames set to...", user);
-  };
-
   return (
     <div>
       <Navbar />
-      <div>Hello world</div>
-      <div>
-        <button
-          className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
-          onClick={handleSaltGeneration}
-        >
-          Generate Salt
-        </button>
-      </div>
-      <div>
-        <button
-          className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
-          onClick={handleSignIn}
-        >
-          Sign In
-        </button>
-      </div>
-      <div className="p-2 m-2">
-        {["Null", "Rock", "Paper", "Scissors", "Spock", "Lizard"].map(
-          (move) => (
-            <button
-              key={move}
-              className={`px-4 py-2 rounded-md ${
-                selectedMove === move ? "bg-blue-500 text-white font-bold" : ""
-              }`}
-              onClick={() => handleMoveClick(move)}
-            >
-              {move}
-            </button>
-          )
-        )}
-      </div>
-      <div>
-        <div>
-          <input
-            type="text"
-            placeholder="Enter player 2 address"
-            onChange={(e) => {
-              setj2Address(e.target.value);
-            }}
-            className="text-black"
-          />
-        </div>
-        <div>
-          <input
-            type="text"
-            placeholder="Enter eth value"
-            onChange={(e) => {
-              setEtherValue(e.target.value);
-            }}
-            className="text-black"
-          />
-        </div>
-        <div>
-          <button
-            className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
-            onClick={handleCreateGame}
-          >
-            Create game
-          </button>
-        </div>
-      </div>
-      <div>
-        <div>
-          <button
-            className={`px-4 py-2 rounded-md ${
-              selectedTab === "p1" ? "bg-blue-500 text-white font-bold" : ""
-            }`}
-            onClick={() => handleTabChange("p1")}
-          >
-            As Player 1
-          </button>
-          <button
-            className={`px-4 py-2 rounded-md ${
-              selectedTab === "p2" ? "bg-blue-500 text-white font-bold" : ""
-            }`}
-            onClick={() => handleTabChange("p2")}
-          >
-            As Player 2
-          </button>
-        </div>
-
-        <label>Select a game:</label>
-        <select className="text-black" onChange={handleGameSelect}>
-          <option value="">-- Select a game --</option>
-          {currentGames &&
-            currentGames.map((item: any) => (
-              <option key={item.game_address} value={item.game_address}>
-                {item.game_address}
-              </option>
-            ))}
-        </select>
-
-        {selectedGame && (
+      <div className="bg-gray-900 p-2 mb-5">
+        <h1 className="text-lg font-bold">Create Game Section</h1>
+        <div className="p-2 m-2">
           <div>
-            <h3>Selected Game:</h3>
-            <pre>{JSON.stringify(selectedGame, null, 2)}</pre>
+            <label>Step 1: Choose your move</label>
           </div>
-        )}
-      </div>
-
-      {selectedTab === "p1" ? (
+          <div className="p-2 m-2">
+            {["Rock", "Paper", "Scissors", "Spock", "Lizard"].map((move) => (
+              <button
+                key={move}
+                className={`px-4 py-2 rounded-md ${
+                  selectedMove === move
+                    ? "bg-blue-500 text-white font-bold"
+                    : ""
+                }`}
+                onClick={() => handleMoveClick(move)}
+              >
+                {move}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="p-2 m-2">
+          <label>Step 2: Generate Salt & move hash</label>
+        </div>
         <div>
           <button
-            className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
-            onClick={handleSolve}
+            className="bg-[#1b1430] rounded-xl p-2 m-2 hover:bg-[#35275e]"
+            onClick={handleSaltGeneration}
           >
-            Solve
-          </button>
-          <button
-            className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
-            onClick={handleGetRefund}
-          >
-            Refund
+            Generate
           </button>
         </div>
-      ) : (
+        <div className="p-2 m-2">
+          <label>Step 3: Enter player 2 address and ETH amount to bet</label>
+        </div>
         <div>
           <div className="p-2 m-2">
-            {["Null", "Rock", "Paper", "Scissors", "Spock", "Lizard"].map(
-              (move) => (
+            <input
+              type="text"
+              placeholder="Enter player 2 address"
+              onChange={(e) => {
+                setj2Address(e.target.value);
+              }}
+              className="text-black"
+            />
+          </div>
+          <div className="p-2 m-2">
+            <input
+              type="text"
+              placeholder="Enter eth value"
+              onChange={(e) => {
+                setEtherValue(e.target.value);
+              }}
+              className="text-black"
+            />
+          </div>
+          <div className="p-2 m-2">
+            <label>Step 4: Create game</label>
+          </div>
+
+          <div>
+            <button
+              className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
+              onClick={handleCreateGame}
+            >
+              Create game
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-gray-900 p-2 mb-5">
+        <h1 className="text-lg font-bold">Interact with games</h1>
+        <div>
+          <div className="p-2 m-2">
+            <button
+              className={`px-4 py-2 rounded-md ${
+                selectedTab === "p1" ? "bg-blue-500 text-white font-bold" : ""
+              }`}
+              onClick={() => handleTabChange("p1")}
+            >
+              As Player 1
+            </button>
+            <button
+              className={`px-4 py-2 rounded-md ${
+                selectedTab === "p2" ? "bg-blue-500 text-white font-bold" : ""
+              }`}
+              onClick={() => handleTabChange("p2")}
+            >
+              As Player 2
+            </button>
+          </div>
+
+          <label>Select a game:</label>
+          <div className="p-2 m-2">
+            <select className="text-black" onChange={handleGameSelect}>
+              <option value="">-- Select a game --</option>
+              {currentGames &&
+                currentGames.map((item: any) => (
+                  <option key={item.game_address} value={item.game_address}>
+                    {item.game_address}
+                  </option>
+                ))}
+            </select>
+            <button
+              className="bg-[#1b1430] rounded-xl p-3 ml-2 hover:bg-[#35275e]"
+              onClick={getGames}
+            >
+              Refresh games list
+            </button>
+          </div>
+
+          {selectedGame && (
+            <div>
+              <h3>Selected Game:</h3>
+              <pre>{JSON.stringify(selectedGame, null, 2)}</pre>
+            </div>
+          )}
+        </div>
+
+        {selectedTab === "p1" ? (
+          <div>
+            {selectedGame && selectedGame.has_p2_played && (
+              <button
+                className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
+                onClick={handleSolve}
+              >
+                Solve
+              </button>
+            )}
+            <button
+              className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
+              onClick={handleGetRefund}
+            >
+              Refund
+            </button>
+          </div>
+        ) : (
+          <div>
+            <div className="p-2 m-2">
+              {["Rock", "Paper", "Scissors", "Spock", "Lizard"].map((move) => (
                 <button
                   key={move}
                   className={`px-4 py-2 rounded-md ${
@@ -516,17 +477,21 @@ export default function Home() {
                 >
                   {move}
                 </button>
-              )
+              ))}
+            </div>
+            {selectedGame && selectedGame.has_p2_played ? (
+              <label>You have already entered move for this game</label>
+            ) : (
+              <button
+                className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
+                onClick={handlePlayMove}
+              >
+                Play your move
+              </button>
             )}
           </div>
-          <button
-            className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
-            onClick={handlePlayMove}
-          >
-            Play your move
-          </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
