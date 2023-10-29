@@ -13,6 +13,7 @@ import { useSetRecoilState, useRecoilValue } from "recoil";
 import { userGames } from "@/store/atoms/userGames";
 import { useEffect, useState } from "react";
 import { userAuthenticated } from "@/store/atoms/userAuthenticated";
+import { hexStringToUint256 } from "@/utils/saltSign";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -109,14 +110,16 @@ export default function Home() {
     console.log("handling solve with move...", move);
     console.log("handling solve with salt...", selectedGame.p1_move_salt);
 
+    //generate signed salt
+    const signedSalt = await signer.signMessage(`${selectedGame.p1_move_salt}`);
+    const signedSaltUint256 = signedSalt.slice(0, 64);
+
+    console.log("signedSaltUint256 is ...", signedSaltUint256);
+
     //solve
-    const result = await contractWithSigner.solve(
-      move,
-      selectedGame.p1_move_salt,
-      {
-        gasLimit: 600000,
-      }
-    );
+    const result = await contractWithSigner.solve(move, signedSaltUint256, {
+      gasLimit: 600000,
+    });
 
     console.log("solve result is...", result);
     alert("Game solved!");
@@ -243,7 +246,18 @@ export default function Home() {
     const contract = new ethers.Contract(hasherContract, hasherAbi, provider);
     const contractWithSigner = contract.connect(signer);
 
-    _c1hash = await contractWithSigner.hash(moveHexValues[selectedMove], salt);
+    //generate signed salt
+    const signedSalt = await signer.signMessage(`${salt}`);
+    const signedSaltUint256 = signedSalt.slice(0, 64);
+    // console.log("signedSaltUint256 =>", signedSaltUint256);
+    // const signedSaltUint256 = "0x" + signedSaltUint256_partial;
+
+    // console.log("signedSaltUint256 is ...", signedSaltUint256);
+
+    _c1hash = await contractWithSigner.hash(
+      moveHexValues[selectedMove],
+      signedSaltUint256
+    );
     console.log("hash from hasher contract is...", _c1hash);
     alert("Salt and move hash generated.");
 
