@@ -72,12 +72,12 @@ export default function Home() {
         );
 
         console.log("connected account is...", account);
-        console.log(
-          "selectedGame.p1_move_hash account is...",
-          selectedGame.p1_move_hash
-        );
+        // console.log(
+        //   "selectedGame.p1_move_hash account is...",
+        //   selectedGame.p1_move_hash
+        // );
 
-        console.log("decoded address is...", p1_move_hash_guess_partial);
+        // console.log("decoded address is...", p1_move_hash_guess_partial);
         // if (account?.toLowerCase() === decodedAddress.toLowerCase()) {
         //   break;
         // }
@@ -86,10 +86,10 @@ export default function Home() {
         ) {
           break;
         }
-        console.log(`Key: ${key}, Value: ${decodedMove}`);
+        // console.log(`Key: ${key}, Value: ${decodedMove}`);
       }
     }
-    console.log("decoded move is..", decodedMove);
+    // console.log("decoded move is..", decodedMove);
     return decodedMove;
   };
 
@@ -107,21 +107,21 @@ export default function Home() {
 
     const move = handleDecodeMove();
 
-    console.log("handling solve with move...", move);
-    console.log("handling solve with salt...", selectedGame.p1_move_salt);
+    // console.log("handling solve with move...", move);
+    // console.log("handling solve with salt...", selectedGame.p1_move_salt);
 
     //generate signed salt
     const signedSalt = await signer.signMessage(`${selectedGame.p1_move_salt}`);
     const signedSaltUint256 = signedSalt.slice(0, 64);
 
-    console.log("signedSaltUint256 is ...", signedSaltUint256);
+    // console.log("signedSaltUint256 is ...", signedSaltUint256);
 
     //solve
     const result = await contractWithSigner.solve(move, signedSaltUint256, {
       gasLimit: 600000,
     });
 
-    console.log("solve result is...", result);
+    // console.log("solve result is...", result);
     alert("Game solved!");
   };
 
@@ -169,6 +169,7 @@ export default function Home() {
         game_address: selectedGame.game_address,
       },
     });
+    alert("Move played.");
   };
 
   const handleMoveClick = (move: any) => {
@@ -204,8 +205,8 @@ export default function Home() {
 
   const getGames = async () => {
     try {
-      console.log("getting gamesdata for account...", account);
-      console.log("getting types of gamesdata for account...", typeof account);
+      // console.log("getting gamesdata for account...", account);
+      // console.log("getting types of gamesdata for account...", typeof account);
 
       const gamesData = await axios({
         method: "GET",
@@ -214,7 +215,7 @@ export default function Home() {
           p1_address: account,
         },
       });
-      console.log("gamesData received is...", gamesData);
+      // console.log("gamesData received is...", gamesData);
       if (gamesData) {
         setUserGames({
           isLoading: false,
@@ -234,8 +235,8 @@ export default function Home() {
 
   const handleSaltGeneration = async () => {
     salt = generateSalt();
-    console.log("generated salt is...", salt);
-    console.log("typeof salt is...", typeof salt);
+    // console.log("generated salt is...", salt);
+    // console.log("typeof salt is...", typeof salt);
     // const saltHex = ethers.utils.hexlify(salt); // Convert salt to a properly formatted hexadecimal string
     // console.log("hexlified salt is...", saltHex);
 
@@ -267,8 +268,8 @@ export default function Home() {
     // );
   };
 
-  console.log("provider is...", provider);
-  console.log("signer is...", signer);
+  // console.log("provider is...", provider);
+  // console.log("signer is...", signer);
 
   const handleCreateGame = async () => {
     if (!salt && !_c1hash) {
@@ -294,7 +295,7 @@ export default function Home() {
     const p1_move_hash_partial = p1_move_hash.slice(
       Math.floor(p1_move_hash.length / 2)
     );
-    console.log("p1_move_hash_partial is...", p1_move_hash_partial);
+    // console.log("p1_move_hash_partial is...", p1_move_hash_partial);
 
     // const p1_move_hash = await signMessage(moveHexValues[selectedMove]);
 
