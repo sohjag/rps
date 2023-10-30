@@ -191,7 +191,7 @@ export default function Home() {
     setSelectedGame(null); // Reset selected game when tab changes
   };
 
-  const handleGameSelect = (event: any) => {
+  const handleGameSelect = async (event: any) => {
     const selectedAddress = event.target.value;
     const games = selectedTab === "p1" ? user.games_as_p1 : user.games_as_p2;
     const game = games.find(
@@ -199,6 +199,13 @@ export default function Home() {
     );
     setSelectedGame(game);
     // console.log("selected game is....", selectedGame);
+    // const balance = await provider.getBalance(selectedAddress);
+    // console.log(
+    //   `ETH Balance of Contract ${selectedAddress}: ${ethers.utils.formatEther(
+    //     balance
+    //   )} ETH`
+    // );
+    // console.log("type of balance", typeof balance._hex);
   };
   const currentGames =
     selectedTab === "p1" ? user.games_as_p1 : user.games_as_p2;
@@ -308,6 +315,7 @@ export default function Home() {
       value: value._hex,
     });
     await contract.deployed();
+    console.log("contract obj after deployment...", contract);
     console.log(
       "contract deployed,adding to db, please wait...",
       contract.address
@@ -336,6 +344,16 @@ export default function Home() {
 
     alert(`Contract deployed at address: ${contract.address}`);
     console.log(`Contract deployed at address: ${contract.address}`);
+  };
+
+  const options = {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZoneName: "short",
   };
 
   return (
@@ -476,9 +494,56 @@ export default function Home() {
               </div>
 
               {selectedGame && (
-                <div>
-                  <h3>Selected Game:</h3>
-                  <pre>{JSON.stringify(selectedGame, null, 2)}</pre>
+                <div className="mb-2">
+                  <h3 className="mb-2">Selected Game:</h3>
+                  {/* <pre>{JSON.stringify(selectedGame, null, 2)}</pre> */}
+                  <div>
+                    <span className="font-bold">Game Address: </span>
+                    <span>{selectedGame.game_address}</span>
+                  </div>
+                  <div>
+                    <span className="font-bold">Your opponent address: </span>
+                    <span>
+                      {selectedTab === "p1"
+                        ? selectedGame.p2_address
+                        : selectedGame.p1_address}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-bold">Stake: </span>
+                    <span>
+                      {ethers.utils.formatUnits(
+                        ethers.utils.hexValue(selectedGame.stake),
+                        "ether"
+                      )}{" "}
+                      ETH
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-bold">Game created at: </span>
+                    <span>
+                      {new Date(selectedGame.createdAt).toLocaleString(
+                        "en-US",
+                        {
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                          timeZone: "UTC",
+                        }
+                      )}{" "}
+                      UTC
+                    </span>
+                  </div>
+
+                  {selectedTab === "p1" && (
+                    <div>
+                      <span className="font-bold">Has opponent played: </span>
+                      <span>{selectedGame.has_p2_played.toString()}</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
