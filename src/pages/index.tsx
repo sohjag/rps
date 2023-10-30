@@ -27,7 +27,7 @@ if (typeof window !== "undefined") {
 
 export default function Home() {
   const { enableWeb3, isWeb3Enabled, account } = useMoralis();
-  console.log("...isweb3 enabled", isWeb3Enabled);
+  // console.log("...isweb3 enabled", isWeb3Enabled);
   const ethers = Moralis.web3Library;
   let salt: any;
   let _c1hash: any;
@@ -120,9 +120,21 @@ export default function Home() {
     const result = await contractWithSigner.solve(move, signedSaltUint256, {
       gasLimit: 600000,
     });
+    alert(
+      "Solve transaction sent. You will receive a confirmation once transaction is confirmed."
+    );
+    console.log("solve result is...", result);
 
-    // console.log("solve result is...", result);
-    alert("Game solved!");
+    const receipt = await result.wait(1);
+    console.log("game solve receipt.. ", receipt);
+
+    if (receipt.status === 1) {
+      alert(
+        `CONFIRMED: Game (game address: ${selectedGame.game_address})  solved!`
+      );
+    } else {
+      alert("Error solving game. Try again.");
+    }
   };
 
   const handleGetRefund = async () => {
@@ -161,15 +173,27 @@ export default function Home() {
       value: selectedGame.stake,
       gasLimit: 200000,
     });
+    alert(
+      "Your move transaction has been sent. You will get a confirmation once your move tranasction is successful."
+    );
     console.log("play move result...", result);
-    axios({
-      method: "PATCH",
-      url: "/api/game/updateGame",
-      data: {
-        game_address: selectedGame.game_address,
-      },
-    });
-    alert("Move played.");
+    const receipt = await result.wait(5);
+    console.log("receipt after 5 block confirmations..", receipt);
+
+    if (receipt.status === 1) {
+      console.log("tx successful confirmed. Ingesting in db");
+      axios({
+        method: "PATCH",
+        url: "/api/game/updateGame",
+        data: {
+          game_address: selectedGame.game_address,
+        },
+      });
+    }
+
+    alert(
+      `CONFIRMED: ${selectedMove} played for game: ${selectedGame.game_address}`
+    );
   };
 
   const handleMoveClick = (move: any) => {
@@ -314,36 +338,46 @@ export default function Home() {
     const contract = await contractFactory.deploy(_c1hash, j2Address, {
       value: value._hex,
     });
+    alert(
+      "Game contract being deployed. You will receive confirmation upon successful deployment."
+    );
     await contract.deployed();
-    console.log("contract obj after deployment...", contract);
-    console.log(
-      "contract deployed,adding to db, please wait...",
-      contract.address
+    const receipt = await contract.deployTransaction.wait(1); // Wait for 1 confirmations
+
+    // console.log("contract obj after deployment...", contract);
+    // console.log(
+    //   "contract deployed,adding to db, please wait...",
+    //   contract.address
+    // );
+
+    // console.log("creating game record with move salt...", salt);
+    // console.log("creating game record with move hash...", _c1hash);
+
+    if (receipt.status === 1) {
+      //db actions
+      const response = await axios({
+        method: "POST",
+        url: "/api/game/createGame",
+        data: {
+          p1_address: account,
+          p2_address: j2Address,
+          game_address: contract.address,
+          p1_move_salt: salt,
+          p1_move_hash: p1_move_hash_partial,
+          stake: value._hex.toString(),
+        },
+      });
+      alert(`Contract deployed at address: ${contract.address}`);
+      console.log(`Contract deployed at address: ${contract.address}`);
+      return;
+    }
+    alert(
+      "Error deploying game contract. Please check player 2 address and stake amount or try again later."
     );
 
-    console.log("creating game record with move salt...", salt);
-    console.log("creating game record with move hash...", _c1hash);
-
-    //db actions
-    const response = await axios({
-      method: "POST",
-      url: "/api/game/createGame",
-      data: {
-        p1_address: account,
-        p2_address: j2Address,
-        game_address: contract.address,
-        p1_move_salt: salt,
-        p1_move_hash: p1_move_hash_partial,
-        stake: value._hex.toString(),
-      },
-    });
-
-    console.log("game created response...", response);
+    // console.log("game created response...", response);
     salt = null;
     _c1hash = null;
-
-    alert(`Contract deployed at address: ${contract.address}`);
-    console.log(`Contract deployed at address: ${contract.address}`);
   };
 
   const options = {
