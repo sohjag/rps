@@ -5,10 +5,12 @@ const gameSchema = new mongoose.Schema({
   p2_address: String,
   game_address: String,
   has_p2_played: { type: Boolean, default: false },
+  p2_move: Number,
   p1_move_salt: String,
   p1_move_hash: String,
   result: String,
   stake: String,
+  game_result: { type: String, default: null },
   createdAt: { type: Date, default: new Date() },
 });
 

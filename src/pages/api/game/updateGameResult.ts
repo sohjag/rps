@@ -8,13 +8,12 @@ export default async function handler(
 ) {
   if (req.method === "PATCH") {
     try {
-      const { game_address, p2_move } = req.body;
+      const { game_address, game_result } = req.body;
       const game = await Game.findOne({ game_address: game_address });
 
       if (game) {
         // Update the document
-        game.has_p2_played = true;
-        game.p2_move = p2_move;
+        game.game_result = game_result;
         await game.save(); // Save the updated document
         res.status(200).json({ message: "update successful" });
       } else {

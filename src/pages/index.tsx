@@ -14,6 +14,7 @@ import { userGames } from "@/store/atoms/userGames";
 import { useEffect, useState } from "react";
 import { userAuthenticated } from "@/store/atoms/userAuthenticated";
 import { hexStringToUint256 } from "@/utils/saltSign";
+import { determineGameResult, GameResult, Move } from "@/utils/gameResult";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -105,7 +106,7 @@ export default function Home() {
     );
     const contractWithSigner = contract.connect(signer);
 
-    const move = handleDecodeMove();
+    const move = await handleDecodeMove();
 
     // console.log("handling solve with move...", move);
     // console.log("handling solve with salt...", selectedGame.p1_move_salt);
@@ -129,6 +130,16 @@ export default function Home() {
     console.log("game solve receipt.. ", receipt);
 
     if (receipt.status === 1) {
+      const gameResult = determineGameResult(move, selectedGame.p2_move);
+      const response = await axios({
+        method: "PATCH",
+        url: "/api/game/updateGameResult",
+        data: {
+          game_address: selectedGame.game_address,
+          game_result: gameResult,
+        },
+      });
+      console.log("updated game result in db..", response);
       alert(
         `CONFIRMED: Game (game address: ${selectedGame.game_address})  solved!`
       );
@@ -143,15 +154,29 @@ export default function Home() {
       return;
     }
     console.log("getting refund..");
-    const contract = new ethers.Contract(
-      selectedGame.game_address,
-      rpcAbi,
-      provider
-    );
-    const contractWithSigner = contract.connect(signer);
-    const result = await contractWithSigner.j2Timeout();
-    console.log("refund processed...", result);
-    alert("refund processed");
+    try {
+      const contract = new ethers.Contract(
+        selectedGame.game_address,
+        rpcAbi,
+        provider
+      );
+      const contractWithSigner = contract.connect(signer);
+      const result = await contractWithSigner.j2Timeout({
+        gasLimit: 100000,
+      });
+      const receipt = result.wait(2);
+      console.log("refund processed...", result);
+      if (receipt.status === 1) {
+        alert("refund processed");
+      } else {
+        alert(
+          "Cannot process refund now. Please check game status or try again later."
+        );
+      }
+    } catch (e) {
+      alert("Something went wrong.");
+      console.log("e");
+    }
   };
 
   const handlePlayMove = async () => {
@@ -177,7 +202,7 @@ export default function Home() {
       "Your move transaction has been sent. You will get a confirmation once your move tranasction is successful."
     );
     console.log("play move result...", result);
-    const receipt = await result.wait(5);
+    const receipt = await result.wait(1);
     console.log("receipt after 5 block confirmations..", receipt);
 
     if (receipt.status === 1) {
@@ -187,6 +212,7 @@ export default function Home() {
         url: "/api/game/updateGame",
         data: {
           game_address: selectedGame.game_address,
+          p2_move: moveHexValues[selectedMove],
         },
       });
     }
@@ -580,24 +606,46 @@ export default function Home() {
                   )}
                 </div>
               )}
+              <div>
+                <span className="font-bold">Game result:</span>
+
+                <span>
+                  {selectedGame && selectedGame.game_result === null && (
+                    <span> No result yet</span>
+                  )}
+                  {selectedGame && selectedGame.game_result === "0" && (
+                    <span> Game tied</span>
+                  )}
+                  {selectedGame && selectedGame.game_result === "1" && (
+                    <span> Player 1 won</span>
+                  )}
+                  {selectedGame && selectedGame.game_result === "2" && (
+                    <span> Player 2 won</span>
+                  )}
+                </span>
+              </div>
             </div>
 
             {selectedTab === "p1" ? (
               <div>
-                {selectedGame && selectedGame.has_p2_played && (
+                {selectedGame &&
+                  selectedGame.has_p2_played &&
+                  selectedGame.game_result === null && (
+                    <button
+                      className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
+                      onClick={handleSolve}
+                    >
+                      Solve
+                    </button>
+                  )}
+                {selectedGame && selectedGame?.game_result === null && (
                   <button
                     className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
-                    onClick={handleSolve}
+                    onClick={handleGetRefund}
                   >
-                    Solve
+                    Refund
                   </button>
                 )}
-                <button
-                  className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
-                  onClick={handleGetRefund}
-                >
-                  Refund
-                </button>
               </div>
             ) : (
               <div>
