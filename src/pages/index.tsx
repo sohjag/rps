@@ -343,6 +343,17 @@ export default function Home() {
       <Navbar />
       {account && isUserAuthenticated.userAuthenticated ? (
         <div>
+          <div>
+            IMPORTANT: Make sure you are on{" "}
+            <a
+              href="https://chainlist.org/chain/11155111"
+              className="text-blue-600"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Sepolia testnet.
+            </a>
+          </div>
           <div className="bg-gray-900 p-2 mb-5">
             <h1 className="text-lg font-bold">Create Game Section</h1>
             <div className="p-2 m-2">
@@ -523,7 +534,17 @@ export default function Home() {
           </div>
         </div>
       ) : (
-        <div>Please connect wallet and sign in to continue.</div>
+        <div>
+          Please connect wallet and sign in to continue. Make sure you are on{" "}
+          <a
+            href="https://chainlist.org/chain/11155111"
+            className="text-blue-600"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Sepolia testnet.
+          </a>
+        </div>
       )}
     </div>
   );
