@@ -1,3 +1,13 @@
+This is a Rock Paper Scissor Spock Lizard game on blockchain (currently on ETH sepolia testnet).
+
+Project features:
+
+- Fully on chain asynchronous play.
+- Sign in with Ethereum.
+- Moves encrypted with salt and extra signatures to prevent manipulation.
+
+Smart contract available here: https://github.com/clesaege/RPS/blob/master/RPS.sol
+
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 ## Getting Started
