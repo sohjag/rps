@@ -115,14 +115,14 @@ export default function Navbar() {
             </span>
             {isUserAuthenticated.userAuthenticated ? (
               <button
-                className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
+                className=" rounded-xl p-3 m-2 bg-[#32255a] hover:bg-[#5941a1] border-white border-solid"
                 onClick={handleSignOut}
               >
                 Sign Out
               </button>
             ) : (
               <button
-                className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
+                className="bg-[#32255a] rounded-xl p-3 m-2 hover:bg-[#5941a1] border-white border-solid"
                 onClick={handleSignIn}
               >
                 Sign In
@@ -138,7 +138,7 @@ export default function Navbar() {
           <div>
             <div className="p-2">
               <button
-                className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
+                className="bg-[#32255a] rounded-xl p-3 m-2 hover:bg-[#5941a1] border-white border-solid"
                 onClick={() => {
                   enableWeb3();
                 }}

@@ -507,7 +507,7 @@ export default function Home() {
 
               <div>
                 <button
-                  className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
+                  className="rounded-xl p-3 ml-4 bg-[#32255a] hover:bg-[#5941a1] border-white border-solid"
                   onClick={handleCreateGame}
                 >
                   Create game
@@ -554,7 +554,7 @@ export default function Home() {
                     ))}
                 </select>
                 <button
-                  className="bg-[#1b1430] rounded-xl p-3 ml-2 hover:bg-[#35275e]"
+                  className="rounded-xl p-3 ml-2 bg-[#32255a] hover:bg-[#5941a1] border-white border-solid"
                   onClick={getGames}
                 >
                   Refresh games list
@@ -643,7 +643,7 @@ export default function Home() {
                   selectedGame.has_p2_played &&
                   selectedGame.game_result === null && (
                     <button
-                      className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
+                      className="rounded-xl p-3 bg-[#32255a] hover:bg-[#5941a1] border-white border-solid"
                       onClick={handleSolve}
                     >
                       Solve
@@ -651,7 +651,7 @@ export default function Home() {
                   )}
                 {selectedGame && selectedGame?.game_result === null && (
                   <button
-                    className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
+                    className="rounded-xl p-3 bg-[#32255a] hover:bg-[#5941a1] border-white border-solid"
                     onClick={handleGetRefund}
                   >
                     Refund
