@@ -10,7 +10,7 @@ const gameSchema = new mongoose.Schema({
   p1_move_hash: String,
   result: String,
   stake: String,
-  game_result: { type: String, default: null },
+  game_result: { type: String, default: "" },
   createdAt: { type: Date, default: new Date() },
 });
 

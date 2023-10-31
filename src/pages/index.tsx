@@ -164,14 +164,19 @@ export default function Home() {
       const result = await contractWithSigner.j2Timeout({
         gasLimit: 100000,
       });
-      const receipt = result.wait(2);
+      const receipt = await result.wait(1);
+      console.log("receipt from refund ", receipt);
+      console.log("refund receipt status is ", receipt.status);
+
       if (receipt.status === 1) {
+        console.log("updating refund in db ");
+
         axios({
           method: "PATCH",
           url: "/api/game/updateGameResult",
           data: {
             game_address: selectedGame.game_address,
-            game_result: 3,
+            game_result: "3",
           },
         });
         getGames();
@@ -469,7 +474,7 @@ export default function Home() {
             </div>
             <div>
               <button
-                className="bg-[#1b1430] rounded-xl p-2 m-2 hover:bg-[#35275e]"
+                className="rounded-xl p-2 ml-4 bg-[#32255a] hover:bg-[#5941a1] border-white border-solid"
                 onClick={handleSaltGeneration}
               >
                 Generate
@@ -562,7 +567,7 @@ export default function Home() {
               </div>
 
               {selectedGame && (
-                <div className="mb-2">
+                <div className="mb-2 ml-2">
                   <h3 className="mb-2">Selected Game:</h3>
                   {/* <pre>{JSON.stringify(selectedGame, null, 2)}</pre> */}
                   <div>
@@ -614,13 +619,14 @@ export default function Home() {
                   )}
                 </div>
               )}
-              <div>
+              <div className="ml-2 mb-2">
                 <span className="font-bold">Game result:</span>
 
                 <span>
-                  {selectedGame && selectedGame.game_result === null && (
-                    <span> No result yet</span>
-                  )}
+                  {selectedGame &&
+                    selectedGame.game_result === (null || "") && (
+                      <span> No result yet</span>
+                    )}
                   {selectedGame && selectedGame.game_result === "0" && (
                     <span> Game tied</span>
                   )}
@@ -638,10 +644,10 @@ export default function Home() {
             </div>
 
             {selectedTab === "p1" ? (
-              <div>
+              <div className="ml-2">
                 {selectedGame &&
                   selectedGame.has_p2_played &&
-                  selectedGame.game_result === null && (
+                  selectedGame.game_result === (null || "") && (
                     <button
                       className="rounded-xl p-3 bg-[#32255a] hover:bg-[#5941a1] border-white border-solid"
                       onClick={handleSolve}
@@ -649,7 +655,7 @@ export default function Home() {
                       Solve
                     </button>
                   )}
-                {selectedGame && selectedGame?.game_result === null && (
+                {selectedGame && selectedGame?.game_result === (null || "") && (
                   <button
                     className="rounded-xl p-3 bg-[#32255a] hover:bg-[#5941a1] border-white border-solid"
                     onClick={handleGetRefund}
@@ -693,7 +699,8 @@ export default function Home() {
         </div>
       ) : (
         <div>
-          Please connect wallet and sign in to continue. Make sure you are on{" "}
+          Please connect your wallet and sign in to continue. Make sure you are
+          on{" "}
           <a
             href="https://chainlist.org/chain/11155111"
             className="text-blue-600"
