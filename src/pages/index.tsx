@@ -13,7 +13,6 @@ import { useSetRecoilState, useRecoilValue } from "recoil";
 import { userGames } from "@/store/atoms/userGames";
 import { useEffect, useState } from "react";
 import { userAuthenticated } from "@/store/atoms/userAuthenticated";
-import { hexStringToUint256 } from "@/utils/saltSign";
 import { determineGameResult, GameResult, Move } from "@/utils/gameResult";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -139,6 +138,7 @@ export default function Home() {
           game_result: gameResult,
         },
       });
+      getGames();
       console.log("updated game result in db..", response);
       alert(
         `CONFIRMED: Game (game address: ${selectedGame.game_address})  solved!`
@@ -165,8 +165,16 @@ export default function Home() {
         gasLimit: 100000,
       });
       const receipt = result.wait(2);
-      console.log("refund processed...", result);
       if (receipt.status === 1) {
+        axios({
+          method: "PATCH",
+          url: "/api/game/updateGameResult",
+          data: {
+            game_address: selectedGame.game_address,
+            game_result: 3,
+          },
+        });
+        getGames();
         alert("refund processed");
       } else {
         alert(
@@ -215,11 +223,11 @@ export default function Home() {
           p2_move: moveHexValues[selectedMove],
         },
       });
+      getGames();
+      alert(
+        `CONFIRMED: ${selectedMove} played for game: ${selectedGame.game_address}`
+      );
     }
-
-    alert(
-      `CONFIRMED: ${selectedMove} played for game: ${selectedGame.game_address}`
-    );
   };
 
   const handleMoveClick = (move: any) => {
@@ -257,8 +265,7 @@ export default function Home() {
     // );
     // console.log("type of balance", typeof balance._hex);
   };
-  const currentGames =
-    selectedTab === "p1" ? user.games_as_p1 : user.games_as_p2;
+  let currentGames = selectedTab === "p1" ? user.games_as_p1 : user.games_as_p2;
 
   const getGames = async () => {
     try {
@@ -279,6 +286,16 @@ export default function Home() {
           games_as_p1: gamesData.data.games_as_p1,
           games_as_p2: gamesData.data.games_as_p2,
         });
+
+        if (selectedGame) {
+          const currGameAddress = selectedGame.game_address;
+          const games =
+            selectedTab === "p1" ? user.games_as_p1 : user.games_as_p2;
+          const game = games.find(
+            (item: any) => item.game_address === currGameAddress
+          );
+          setSelectedGame(game);
+        }
       }
     } catch (e) {
       console.log("Error while fetching games", e);
@@ -393,6 +410,7 @@ export default function Home() {
           stake: value._hex.toString(),
         },
       });
+      getGames();
       alert(`Contract deployed at address: ${contract.address}`);
       console.log(`Contract deployed at address: ${contract.address}`);
       return;
@@ -406,18 +424,8 @@ export default function Home() {
     _c1hash = null;
   };
 
-  const options = {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    timeZoneName: "short",
-  };
-
   return (
-    <div>
+    <div className="bg-black text-white">
       <Navbar />
       {account && isUserAuthenticated.userAuthenticated ? (
         <div>
@@ -508,7 +516,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="bg-gray-900 p-2 mb-5">
+          <div className="bg-gray-900 p-2 pb-10">
             <h1 className="text-lg font-bold">Interact with games</h1>
             <div>
               <div className="p-2 m-2">
@@ -621,6 +629,9 @@ export default function Home() {
                   )}
                   {selectedGame && selectedGame.game_result === "2" && (
                     <span> Player 2 won</span>
+                  )}
+                  {selectedGame && selectedGame.game_result === "3" && (
+                    <span> Game cancelled</span>
                   )}
                 </span>
               </div>
