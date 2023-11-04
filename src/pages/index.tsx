@@ -359,6 +359,18 @@ export default function Home() {
       alert("Please set player 2 address");
       return;
     }
+    if (!ethers.utils.isAddress(j2Address)) {
+      alert("Please enter valid Eth address.");
+      return;
+    }
+    const regex = /^-?\d*\.?\d+$/;
+    if (!regex.test(etherValue)) {
+      alert(
+        "Please enter valid ETH amount to stake. Make sure you have enough balance."
+      );
+      return;
+    }
+
     //@ts-ignore
     const contractFactory = new ethers.ContractFactory(
       rpcAbi,
