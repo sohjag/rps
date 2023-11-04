@@ -161,9 +161,18 @@ export default function Home() {
         provider
       );
       const contractWithSigner = contract.connect(signer);
-      const result = await contractWithSigner.j2Timeout({
-        gasLimit: 100000,
-      });
+
+      let result;
+      if (selectedTab === "p1") {
+        result = await contractWithSigner.j2Timeout({
+          gasLimit: 100000,
+        });
+      } else {
+        result = await contractWithSigner.j1Timeout({
+          gasLimit: 100000,
+        });
+      }
+
       const receipt = await result.wait(1);
       console.log("receipt from refund ", receipt);
       console.log("refund receipt status is ", receipt.status);
@@ -699,13 +708,21 @@ export default function Home() {
                   )}
                 </div>
                 {selectedGame && selectedGame.has_p2_played ? (
-                  <label>You have already entered move for this game</label>
+                  <label>You have already entered move for this game </label>
                 ) : (
                   <button
-                    className="bg-[#1b1430] rounded-xl p-3 hover:bg-[#35275e]"
+                    className="rounded-xl p-3 mr-2 bg-[#32255a] hover:bg-[#5941a1] border-white border-solid"
                     onClick={handlePlayMove}
                   >
                     Play your move
+                  </button>
+                )}
+                {selectedGame && selectedGame?.game_result === (null || "") && (
+                  <button
+                    className="rounded-xl p-3 bg-[#32255a] hover:bg-[#5941a1] border-white border-solid"
+                    onClick={handleGetRefund}
+                  >
+                    Refund
                   </button>
                 )}
               </div>
