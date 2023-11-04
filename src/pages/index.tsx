@@ -428,7 +428,10 @@ export default function Home() {
         },
       });
       getGames();
-      alert(`Contract deployed at address: ${contract.address}`);
+      alert(`Contract deployed at address: ${contract.address} . Your Move and Salt for this game are: \n
+      Salt: ${salt}\n
+      Move: ${selectedMove}\n
+      Please store your Salt and Move safely. The encrypted version of the same will be stored in a database.`);
       console.log(`Contract deployed at address: ${contract.address}`);
       return;
     }
