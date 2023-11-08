@@ -798,7 +798,7 @@ export default function Home() {
               </div>
             </div>
 
-            {selectedGame && selectedGame.game_result === (null || "") && (
+            {selectedGame && selectedGame?.game_result === (null || "") && (
               <div className="ml-2 font-bold">
                 <div>Seconds left before timeout:</div>
                 <div id="timer"></div>
@@ -810,7 +810,7 @@ export default function Home() {
               <div className="ml-2">
                 {selectedGame &&
                   selectedGame.has_p2_played &&
-                  selectedGame.game_result === (null || "") && (
+                  selectedGame?.game_result === (null || "") && (
                     <button
                       className="rounded-xl p-3 mr-2 bg-[#32255a] hover:bg-[#5941a1] border-white border-solid"
                       onClick={handleSolve}
@@ -833,7 +833,7 @@ export default function Home() {
               <div>
                 {selectedGame &&
                   !selectedGame.has_p2_played &&
-                  selectedGame.game_result === (null || "") && (
+                  selectedGame?.game_result === (null || "") && (
                     <div className="p-2 m-2">
                       {["Rock", "Paper", "Scissors", "Spock", "Lizard"].map(
                         (move) => (
@@ -856,7 +856,7 @@ export default function Home() {
                   <label>You have entered move for this game </label>
                 ) : (
                   <div>
-                    {selectedGame.game_result === (null || "") && (
+                    {selectedGame?.game_result === (null || "") && (
                       <button
                         className="rounded-xl p-3 mr-2 bg-[#32255a] hover:bg-[#5941a1] border-white border-solid"
                         onClick={handlePlayMove}
