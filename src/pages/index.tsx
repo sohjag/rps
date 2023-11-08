@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { Inter } from "next/font/google";
 import { useMoralis, useWeb3Contract } from "react-moralis";
 import Navbar from "@/components/Navbar";
@@ -37,9 +36,8 @@ export default function Home() {
   const [selectedTab, setSelectedTab] = useState("p1");
   const [j2Address, setj2Address] = useState("");
   const isUserAuthenticated = useRecoilValue(userAuthenticated);
-
   const [selectedGame, setSelectedGame] = useState<any>(null);
-  const [inputValue, setInputValue] = useState("0");
+  const [remainingTime, setRemainingTime] = useState(0);
   const [etherValue, setEtherValue] = useState<any>(null);
   const [selectedMove, setSelectedMove] = useState("Rock");
   const moveHexValues: { [key: string]: any } = {
@@ -50,6 +48,7 @@ export default function Home() {
     Lizard: 5,
   };
   const hasherContract = "0x073a7767009B2a6da4cd254B552f9F50C3E26043";
+  const sepoliaApi = "https://api-sepolia.etherscan.io/api";
 
   const handleDecodeMove = async () => {
     console.log("decoding the move...");
@@ -113,6 +112,7 @@ export default function Home() {
     //generate signed salt
     const signedSalt = await signer.signMessage(`${selectedGame.p1_move_salt}`);
     const signedSaltUint256 = signedSalt.slice(0, 64);
+    const gameResult = determineGameResult(move, selectedGame.p2_move);
 
     // console.log("signedSaltUint256 is ...", signedSaltUint256);
 
@@ -120,6 +120,12 @@ export default function Home() {
     const result = await contractWithSigner.solve(move, signedSaltUint256, {
       gasLimit: 600000,
     });
+
+    const updatedSelectedGame = {
+      ...selectedGame,
+      game_result: gameResult.toString(),
+    };
+    setSelectedGame(updatedSelectedGame);
     alert(
       "Solve transaction sent. You will receive a confirmation once transaction is confirmed."
     );
@@ -129,7 +135,7 @@ export default function Home() {
     console.log("game solve receipt.. ", receipt);
 
     if (receipt.status === 1) {
-      const gameResult = determineGameResult(move, selectedGame.p2_move);
+      // const gameResult = determineGameResult(move, selectedGame.p2_move);
       const response = await axios({
         method: "PATCH",
         url: "/api/game/updateGameResult",
@@ -138,7 +144,7 @@ export default function Home() {
           game_result: gameResult,
         },
       });
-      getGames();
+      // getGames();
       console.log("updated game result in db..", response);
       alert(
         `CONFIRMED: Game (game address: ${selectedGame.game_address})  solved!`
@@ -206,6 +212,7 @@ export default function Home() {
       alert("please select a game first");
       return;
     }
+
     const contract = new ethers.Contract(
       selectedGame.game_address,
       rpcAbi,
@@ -220,6 +227,12 @@ export default function Home() {
       value: selectedGame.stake,
       gasLimit: 200000,
     });
+    const updatedSelectedGame = {
+      ...selectedGame,
+      has_p2_played: true,
+      p2_move: moveHexValues[selectedMove],
+    };
+    setSelectedGame(updatedSelectedGame);
     alert(
       "Your move transaction has been sent. You will get a confirmation once your move tranasction is successful."
     );
@@ -229,7 +242,8 @@ export default function Home() {
 
     if (receipt.status === 1) {
       console.log("tx successful confirmed. Ingesting in db");
-      axios({
+
+      const response = await axios({
         method: "PATCH",
         url: "/api/game/updateGame",
         data: {
@@ -237,7 +251,9 @@ export default function Home() {
           p2_move: moveHexValues[selectedMove],
         },
       });
-      getGames();
+      // if (response.status === 200) {
+      //   getGames();
+      // }
       alert(
         `CONFIRMED: ${selectedMove} played for game: ${selectedGame.game_address}`
       );
@@ -270,6 +286,7 @@ export default function Home() {
       (item: any) => item.game_address === selectedAddress
     );
     setSelectedGame(game);
+
     // console.log("selected game is....", selectedGame);
     // const balance = await provider.getBalance(selectedAddress);
     // console.log(
@@ -321,16 +338,153 @@ export default function Home() {
     getGames();
   }, [account]);
 
+  async function pollForTimeout() {
+    // if (selectedGame.game_result !== null || "") {
+    //   console.log("result found..returning", selectedGame.game_address);
+    //   console.log("result ", typeof selectedGame.game_result);
+
+    //   return;
+    // }
+    try {
+      console.log("polling for timeout");
+      const params = {
+        module: "account",
+        action: "txlist",
+        address: selectedGame.game_address,
+        startblock: 0,
+        endblock: 99999999,
+        page: 1,
+        offset: 10,
+        sort: "desc",
+        apikey: "YourApiKeyToken",
+      };
+
+      if (selectedGame.game_result === "" || null) {
+        const response = await axios.get(sepoliaApi, { params });
+
+        for (let i = 0; i < response.data.result.length; i++) {
+          const functionExecuted = response.data.result[i].functionName;
+          const status = response.data.result[i].txreceipt_status;
+
+          console.log("function executed...", functionExecuted);
+
+          if (
+            (functionExecuted === "j1Timeout()" ||
+              functionExecuted === "j2Timeout()") &&
+            (status === "1" || 1)
+          ) {
+            const updatedSelectedGame = {
+              ...selectedGame,
+              game_result: "3",
+            };
+            setSelectedGame(updatedSelectedGame);
+
+            const response = axios({
+              method: "PATCH",
+              url: "/api/game/updateGameResult",
+              data: {
+                game_address: selectedGame.game_address,
+                game_result: "3",
+              },
+            });
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      console.log("error occured while checking for timeout ", e);
+    }
+  }
+
+  async function pollLastAction() {
+    try {
+      if (!selectedGame.game_address || !selectedGame) {
+        return; // Do not poll if there's no game address or the game result is not null
+      }
+
+      const contract = new ethers.Contract(
+        selectedGame.game_address,
+        rpcAbi,
+        provider
+      );
+      const lastAction = await contract.lastAction();
+      const player2Move = await contract.c2();
+      const timeout = await contract.TIMEOUT();
+      // const balance = await provider.getBalance(selectedGame.game_address);
+      // const balanceInEth = ethers.utils.formatEther(balance);
+      // console.log("balance of contract is", typeof balanceInEth);
+
+      const currentTime = Math.floor(Date.now() / 1000);
+
+      if (player2Move !== 0) {
+        // setp2Move(player2Move);
+        // console.log("The play function has been called.", player2Move);
+
+        if (currentTime <= lastAction.toNumber() + timeout.toNumber()) {
+          // console.log("there is time remaining for this game");
+          // The current time is within the timeout range
+          const remainingTime =
+            lastAction.toNumber() + timeout.toNumber() - currentTime;
+
+          if (remainingTime >= 0) {
+            setRemainingTime(remainingTime);
+          }
+        }
+
+        if (selectedGame.p2_move !== player2Move) {
+          const updatedSelectedGame = {
+            ...selectedGame,
+            has_p2_played: true,
+            p2_move: player2Move,
+          };
+          setSelectedGame(updatedSelectedGame);
+          axios({
+            method: "PATCH",
+            url: "/api/game/updateGame",
+            data: {
+              game_address: selectedGame.game_address,
+              p2_move: player2Move,
+            },
+          });
+        }
+      } else {
+        if (currentTime <= lastAction.toNumber() + timeout.toNumber()) {
+          // console.log("there is time remaining for this game");
+          // The current time is within the timeout range
+          const remainingTime =
+            lastAction.toNumber() + timeout.toNumber() - currentTime;
+
+          if (remainingTime >= 0) {
+            setRemainingTime(remainingTime);
+          }
+        }
+        // console.log("The play function has not been called yet.");
+      }
+      // console.log(
+      //   "Last action timestamp:",
+      //   new Date(lastAction.toNumber() * 1000)
+      // );
+      // console.log("Timeout:", new Date(timeout.toNumber() * 1000));
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  }
+  useEffect(() => {
+    if (selectedGame) {
+      const interval = setInterval(pollLastAction, 1000);
+      const timeoutInterval = setInterval(pollForTimeout, 4000);
+
+      return () => {
+        clearInterval(interval);
+        clearInterval(timeoutInterval);
+      };
+    }
+  }, [selectedGame]);
+
+  useEffect(() => {}, [remainingTime, selectedGame, selectedGame?.game_result]);
+
   const handleSaltGeneration = async () => {
     salt = generateSalt();
-    // console.log("generated salt is...", salt);
-    // console.log("typeof salt is...", typeof salt);
-    // const saltHex = ethers.utils.hexlify(salt); // Convert salt to a properly formatted hexadecimal string
-    // console.log("hexlified salt is...", saltHex);
-
-    // const moveHex = ethers.utils.hexlify(move);
-    // console.log("moveHex is...", moveHex);
-    // _c1hash = calculateHash(moveHexValues[selectedMove], salt);
 
     const contract = new ethers.Contract(hasherContract, hasherAbi, provider);
     const contractWithSigner = contract.connect(signer);
@@ -347,17 +501,9 @@ export default function Home() {
       moveHexValues[selectedMove],
       signedSaltUint256
     );
-    console.log("hash from hasher contract is...", _c1hash);
+    // console.log("hash from hasher contract is...", _c1hash);
     alert("Salt and move hash generated.");
-
-    // console.log(
-    //   "ethers parsed inputValue is",
-    //   ethers.utils.parseEther(inputValue)
-    // );
   };
-
-  // console.log("provider is...", provider);
-  // console.log("signer is...", signer);
 
   const handleCreateGame = async () => {
     if (!salt && !_c1hash) {
@@ -395,12 +541,6 @@ export default function Home() {
     const p1_move_hash_partial = p1_move_hash.slice(
       Math.floor(p1_move_hash.length / 2)
     );
-    // console.log("p1_move_hash_partial is...", p1_move_hash_partial);
-
-    // const p1_move_hash = await signMessage(moveHexValues[selectedMove]);
-
-    // const value = 1234567891234567;
-    // const valueHex = ethers.utils.hexlify(value);
 
     const value = ethers.utils.parseEther(etherValue);
 
@@ -412,15 +552,6 @@ export default function Home() {
     );
     await contract.deployed();
     const receipt = await contract.deployTransaction.wait(1); // Wait for 1 confirmations
-
-    // console.log("contract obj after deployment...", contract);
-    // console.log(
-    //   "contract deployed,adding to db, please wait...",
-    //   contract.address
-    // );
-
-    // console.log("creating game record with move salt...", salt);
-    // console.log("creating game record with move hash...", _c1hash);
 
     if (receipt.status === 1) {
       //db actions
@@ -667,64 +798,86 @@ export default function Home() {
               </div>
             </div>
 
+            {selectedGame && selectedGame.game_result === (null || "") && (
+              <div className="ml-2 font-bold">
+                <div>Seconds left before timeout:</div>
+                <div id="timer"></div>
+                <div className="text-lg">{remainingTime}</div>
+              </div>
+            )}
+
             {selectedTab === "p1" ? (
               <div className="ml-2">
                 {selectedGame &&
                   selectedGame.has_p2_played &&
                   selectedGame.game_result === (null || "") && (
                     <button
-                      className="rounded-xl p-3 bg-[#32255a] hover:bg-[#5941a1] border-white border-solid"
+                      className="rounded-xl p-3 mr-2 bg-[#32255a] hover:bg-[#5941a1] border-white border-solid"
                       onClick={handleSolve}
                     >
                       Solve
                     </button>
                   )}
-                {selectedGame && selectedGame?.game_result === (null || "") && (
-                  <button
-                    className="rounded-xl p-3 bg-[#32255a] hover:bg-[#5941a1] border-white border-solid"
-                    onClick={handleGetRefund}
-                  >
-                    Refund
-                  </button>
-                )}
+                {selectedGame &&
+                  selectedGame?.game_result === (null || "") &&
+                  remainingTime <= 1 && (
+                    <button
+                      className="rounded-xl p-3 bg-[#32255a] hover:bg-[#5941a1] border-white border-solid"
+                      onClick={handleGetRefund}
+                    >
+                      Refund
+                    </button>
+                  )}
               </div>
             ) : (
               <div>
-                <div className="p-2 m-2">
-                  {["Rock", "Paper", "Scissors", "Spock", "Lizard"].map(
-                    (move) => (
-                      <button
-                        key={move}
-                        className={`px-4 py-2 rounded-md ${
-                          selectedMove === move
-                            ? "bg-blue-500 text-white font-bold"
-                            : ""
-                        }`}
-                        onClick={() => handleMoveClick(move)}
-                      >
-                        {move}
-                      </button>
-                    )
+                {selectedGame &&
+                  !selectedGame.has_p2_played &&
+                  selectedGame.game_result === (null || "") && (
+                    <div className="p-2 m-2">
+                      {["Rock", "Paper", "Scissors", "Spock", "Lizard"].map(
+                        (move) => (
+                          <button
+                            key={move}
+                            className={`px-4 py-2 rounded-md ${
+                              selectedMove === move
+                                ? "bg-blue-500 text-white font-bold"
+                                : ""
+                            }`}
+                            onClick={() => handleMoveClick(move)}
+                          >
+                            {move}
+                          </button>
+                        )
+                      )}
+                    </div>
                   )}
-                </div>
                 {selectedGame && selectedGame.has_p2_played ? (
-                  <label>You have already entered move for this game </label>
+                  <label>You have entered move for this game </label>
                 ) : (
-                  <button
-                    className="rounded-xl p-3 mr-2 bg-[#32255a] hover:bg-[#5941a1] border-white border-solid"
-                    onClick={handlePlayMove}
-                  >
-                    Play your move
-                  </button>
+                  <div>
+                    {selectedGame.game_result === (null || "") && (
+                      <button
+                        className="rounded-xl p-3 mr-2 bg-[#32255a] hover:bg-[#5941a1] border-white border-solid"
+                        onClick={handlePlayMove}
+                        id="playMove"
+                      >
+                        Play your move
+                      </button>
+                    )}
+                  </div>
                 )}
-                {selectedGame && selectedGame?.game_result === (null || "") && (
-                  <button
-                    className="rounded-xl p-3 bg-[#32255a] hover:bg-[#5941a1] border-white border-solid"
-                    onClick={handleGetRefund}
-                  >
-                    Refund
-                  </button>
-                )}
+                {selectedGame &&
+                  selectedGame?.game_result === (null || "") &&
+                  remainingTime <= 1 &&
+                  selectedGame?.has_p2_played && (
+                    <button
+                      className="rounded-xl p-3 bg-[#32255a] hover:bg-[#5941a1] border-white border-solid"
+                      onClick={handleGetRefund}
+                    >
+                      Refund
+                    </button>
+                  )}
               </div>
             )}
           </div>

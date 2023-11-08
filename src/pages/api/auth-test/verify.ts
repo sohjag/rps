@@ -33,9 +33,9 @@ export default async function handler(
         console.log("decoded address is...", decodedAddress);
 
         if (address === decodedAddress.toLowerCase()) {
-          console.log("inside IF block...");
-          console.log("address is ....", address);
-          console.log("decoded address is...", decodedAddress.toLowerCase());
+          // console.log("inside IF block...");
+          // console.log("address is ....", address);
+          // console.log("decoded address is...", decodedAddress.toLowerCase());
           const jwtToken = await new jose.SignJWT({ userAddress: address })
             .setProtectedHeader({ alg: "HS256" })
             .setIssuedAt()
