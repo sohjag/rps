@@ -13,6 +13,7 @@ import { userGames } from "@/store/atoms/userGames";
 import { useEffect, useState } from "react";
 import { userAuthenticated } from "@/store/atoms/userAuthenticated";
 import { determineGameResult, GameResult, Move } from "@/utils/gameResult";
+import { url } from "inspector";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -362,6 +363,25 @@ export default function Home() {
       };
 
       if (selectedGame.game_result === "" || null) {
+        const res = await axios({
+          method: "GET",
+          url: "/api/game-test/getGameByAddress",
+          params: {
+            game_address: selectedGame.game_address,
+          },
+        });
+        if (res.status === 200) {
+          const game = res.data.game;
+          if (game.game_result !== "" || null) {
+            const updatedSelectedGame = {
+              ...selectedGame,
+              game_result: game.game_result,
+            };
+            setSelectedGame(updatedSelectedGame);
+            return;
+          }
+        }
+
         const response = await axios.get(sepoliaApi, { params });
 
         for (let i = 0; i < response.data.result.length; i++) {
