@@ -106,7 +106,14 @@ export default function Home() {
     );
     const contractWithSigner = contract.connect(signer);
 
-    const move = await handleDecodeMove();
+    // let move: Number;
+    // console.log("p1_move_hash is ...", selectedGame.p1_move_hash);
+    // console.log("p1_move is...", selectedGame.p1_move);
+    // if (selectedGame.p1_move_hash !== "" || null || undefined) {
+    //   move = await handleDecodeMove();
+    // } else {
+    const move = selectedGame.p1_move;
+    // }
 
     // console.log("handling solve with move...", move);
     // console.log("handling solve with salt...", selectedGame.p1_move_salt);
@@ -182,6 +189,12 @@ export default function Home() {
         });
       }
 
+      const updatedSelectedGame = {
+        ...selectedGame,
+        game_result: "3",
+      };
+      setSelectedGame(updatedSelectedGame);
+
       const receipt = await result.wait(1);
       console.log("receipt from refund ", receipt);
       console.log("refund receipt status is ", receipt.status);
@@ -197,7 +210,7 @@ export default function Home() {
             game_result: "3",
           },
         });
-        getGames();
+        // getGames();
         alert("refund processed");
       } else {
         alert(
@@ -593,7 +606,7 @@ export default function Home() {
       moveHexValues[selectedMove],
       signedSaltUint256
     );
-    // console.log("hash from hasher contract is...", _c1hash);
+    console.log("hash from hasher contract is...", _c1hash);
     alert("Salt and move hash generated.");
   };
 
@@ -626,13 +639,13 @@ export default function Home() {
     );
     console.log("deploying contract, please wait...");
 
-    const p1_move_hash = await signer.signMessage(
-      `${moveHexValues[selectedMove]}`
-    );
+    // const p1_move_hash = await signer.signMessage(
+    //   `${moveHexValues[selectedMove]}`
+    // );
 
-    const p1_move_hash_partial = p1_move_hash.slice(
-      Math.floor(p1_move_hash.length / 2)
-    );
+    // const p1_move_hash_partial = p1_move_hash.slice(
+    //   Math.floor(p1_move_hash.length / 2)
+    // );
 
     const value = ethers.utils.parseEther(etherValue);
 
@@ -654,8 +667,8 @@ export default function Home() {
           p1_address: account,
           p2_address: j2Address,
           game_address: contract.address,
+          p1_move: moveHexValues[selectedMove],
           p1_move_salt: salt,
-          p1_move_hash: p1_move_hash_partial,
           stake: value._hex.toString(),
         },
       });

@@ -79,7 +79,7 @@ export default function Navbar() {
 
         const gamesData = await axios({
           method: "GET",
-          url: "/api/game-test/getGamesByFirstUser",
+          url: "/api/game-test/getGamesByUser",
           params: {
             p1_address: account,
           },
