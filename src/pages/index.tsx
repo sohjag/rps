@@ -29,6 +29,7 @@ export default function Home() {
   // console.log("...isweb3 enabled", isWeb3Enabled);
   const ethers = Moralis.web3Library;
   let salt: any;
+  let signedSaltUint256: any;
   let _c1hash: any;
   // const j2Address = "0x4C9201d8bF9A70b7550585DAc1738D4F7Dfd5108";
   const user = useRecoilValue(userGames);
@@ -112,9 +113,10 @@ export default function Home() {
     //generate signed salt
     const signedSalt = await signer.signMessage(`${selectedGame.p1_move_salt}`);
     const signedSaltUint256 = signedSalt.slice(0, 64);
-    const gameResult = determineGameResult(move, selectedGame.p2_move);
 
     // console.log("signedSaltUint256 is ...", signedSaltUint256);
+    // return;
+    const gameResult = determineGameResult(move, selectedGame.p2_move);
 
     //solve
     const result = await contractWithSigner.solve(move, signedSaltUint256, {
@@ -356,7 +358,7 @@ export default function Home() {
         page: 1,
         offset: 10,
         sort: "desc",
-        apikey: "YourApiKeyToken",
+        apikey: "4CDVASTC6ICZF3KA56FTT49S1P1WNTSS5E",
       };
 
       if (selectedGame.game_result === "" || null) {
@@ -366,7 +368,77 @@ export default function Home() {
           const functionExecuted = response.data.result[i].functionName;
           const status = response.data.result[i].txreceipt_status;
 
-          console.log("function executed...", functionExecuted);
+          // console.log("function executed...", functionExecuted);
+          if (
+            functionExecuted === "solve(uint8 _c1,uint256 _salt)" &&
+            status === "1"
+          ) {
+            const hash = response.data.result[i].hash;
+            // console.log("solve function found");
+
+            const res = await axios.get(sepoliaApi, {
+              params: {
+                module: "account",
+                action: "txlistinternal",
+                txhash: hash,
+                apikey: "4CDVASTC6ICZF3KA56FTT49S1P1WNTSS5E",
+              },
+            });
+
+            if (res.data.result.length === 2) {
+              const updatedSelectedGame = {
+                ...selectedGame,
+                game_result: "0",
+              };
+              setSelectedGame(updatedSelectedGame);
+              const response = axios({
+                method: "PATCH",
+                url: "/api/game/updateGameResult",
+                data: {
+                  game_address: selectedGame.game_address,
+                  game_result: "0",
+                },
+              });
+              break;
+            } else {
+              console.log(res.data);
+              const winnerAddress = res.data.result[0].to;
+              console.log("winnnerAddress is...", winnerAddress);
+              console.log("p1_address is...", selectedGame.p1_address);
+              console.log("p2_address is...", selectedGame.p2_address);
+              if (winnerAddress === selectedGame.p1_address) {
+                const updatedSelectedGame = {
+                  ...selectedGame,
+                  game_result: "1",
+                };
+                setSelectedGame(updatedSelectedGame);
+                const response = axios({
+                  method: "PATCH",
+                  url: "/api/game/updateGameResult",
+                  data: {
+                    game_address: selectedGame.game_address,
+                    game_result: "1",
+                  },
+                });
+                break;
+              } else if (winnerAddress === selectedGame.p2_address) {
+                const updatedSelectedGame = {
+                  ...selectedGame,
+                  game_result: "2",
+                };
+                setSelectedGame(updatedSelectedGame);
+                const response = axios({
+                  method: "PATCH",
+                  url: "/api/game/updateGameResult",
+                  data: {
+                    game_address: selectedGame.game_address,
+                    game_result: "2",
+                  },
+                });
+                break;
+              }
+            }
+          }
 
           if (
             (functionExecuted === "j1Timeout()" ||
@@ -491,11 +563,11 @@ export default function Home() {
 
     //generate signed salt
     const signedSalt = await signer.signMessage(`${salt}`);
-    const signedSaltUint256 = signedSalt.slice(0, 64);
+    signedSaltUint256 = signedSalt.slice(0, 64);
     // console.log("signedSaltUint256 =>", signedSaltUint256);
     // const signedSaltUint256 = "0x" + signedSaltUint256_partial;
 
-    // console.log("signedSaltUint256 is ...", signedSaltUint256);
+    console.log("signedSaltUint256 is ...", signedSaltUint256);
 
     _c1hash = await contractWithSigner.hash(
       moveHexValues[selectedMove],
@@ -569,7 +641,7 @@ export default function Home() {
       });
       getGames();
       alert(`Contract deployed at address: ${contract.address} . Your Move and Salt for this game are: \n
-      Salt: ${salt}\n
+      Salt: ${signedSaltUint256}\n
       Move: ${selectedMove}\n
       Please store your Salt and Move safely. The encrypted version of the same will be stored in a database.`);
       console.log(`Contract deployed at address: ${contract.address}`);
