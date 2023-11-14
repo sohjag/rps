@@ -29,9 +29,9 @@ export default function Home() {
   const { enableWeb3, isWeb3Enabled, account } = useMoralis();
   // console.log("...isweb3 enabled", isWeb3Enabled);
   const ethers = Moralis.web3Library;
-  let salt: any;
-  let signedSaltUint256: any;
-  let _c1hash: any;
+  let salt: string | null;
+  let signedSaltUint256: string | null;
+  let _c1hash: string | null;
   // const j2Address = "0x4C9201d8bF9A70b7550585DAc1738D4F7Dfd5108";
   const user = useRecoilValue(userGames);
   const setUserGames = useSetRecoilState(userGames);
@@ -40,9 +40,9 @@ export default function Home() {
   const isUserAuthenticated = useRecoilValue(userAuthenticated);
   const [selectedGame, setSelectedGame] = useState<any>(null);
   const [remainingTime, setRemainingTime] = useState(0);
-  const [etherValue, setEtherValue] = useState<any>(null);
+  const [etherValue, setEtherValue] = useState<string>("");
   const [selectedMove, setSelectedMove] = useState("Rock");
-  const moveHexValues: { [key: string]: any } = {
+  const moveHexValues: { [key: string]: number } = {
     Rock: 1,
     Paper: 2,
     Scissors: 3,
